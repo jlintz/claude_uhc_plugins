@@ -85,13 +85,15 @@ Use AskUserQuestion: "Does this look correct? Should I proceed to fill the form?
 
 Do NOT proceed to form filling until the user confirms.
 
-### Step 5: Email Verification (User Action)
+### Step 5: Open Form and Email Verification
 
-Inform the user:
+1. Use Chrome DevTools MCP `new_page` to open `https://memberforms.uhc.com/DirectMedicalReimbursement.html`
+2. `take_snapshot` to see the email verification form
+3. Inform the user:
 
-> "Please navigate to https://memberforms.uhc.com/DirectMedicalReimbursement.html in your Chrome browser, complete the email verification step, and let me know when you're past it. I'll then fill out the rest of the form."
+> "I've opened the UHC reimbursement form. Please complete the email verification step in the browser and let me know when you're past it."
 
-Wait for the user to confirm they've completed email verification before proceeding.
+4. Wait for the user to confirm they've completed email verification before proceeding.
 
 ### Step 6: Fill Subscriber Information
 

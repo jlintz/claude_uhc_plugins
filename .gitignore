@@ -1,5 +1,6 @@
 # Sensitive config with real member details
 config/member.json
+docs/plans/
 
 # OS files
 .DS_Store
