@@ -12,7 +12,7 @@ This skill automates filling out UHC's Direct Medical Reimbursement form at `htt
 
 - User must be logged in / have completed email verification on the form already
 - Chrome browser open with Chrome DevTools MCP connected
-- `config/member.json` populated with subscriber details
+- `config/member.json` populated with subscriber details (will prompt to create if missing)
 
 ## When to Use
 
@@ -32,7 +32,21 @@ Use AskUserQuestion to ask the user for the superbill file path:
 
 ### Step 2: Read Config
 
-Read the config file at `config/member.json` (relative to this plugin's root directory). This contains subscriber details needed for form filling.
+Read the config file at `config/member.json` (relative to this plugin's root directory).
+
+**If the file does not exist:**
+
+1. Inform the user that no subscriber config was found.
+2. Ask if they would like you to create one now.
+3. If **no** — stop the skill and tell the user to populate `config/member.json` using `config/member.example.json` as a template before retrying.
+4. If **yes** — prompt the user for each required field:
+   - Member ID
+   - Group Number
+   - First Name
+   - Last Name
+   - Date of Birth (MM/DD/YYYY)
+5. Ask if the patient is the subscriber (default: yes), whether they have other insurance (default: no), and whether services were rendered on a foreign ship/cruise (default: no).
+6. Write the collected values to `config/member.json` in the same format as `config/member.example.json`, then continue.
 
 ### Step 3: Extract Data from Superbill
 
