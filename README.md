@@ -28,8 +28,11 @@ Have Google Chrome installed and running. The MCP server will connect to it for 
 
 ## 🛠️ Installation
 
+Add the marketplace and install the plugin:
+
 ```bash
-claude plugin add https://github.com/jlintz/claude_uhc_plugins.git
+claude plugin marketplace add https://github.com/jlintz/claude_uhc_plugins.git
+claude plugin install claude-uhc-plugin
 ```
 
 ## ⚙️ Configuration
