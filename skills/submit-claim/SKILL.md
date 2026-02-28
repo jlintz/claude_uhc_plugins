@@ -129,3 +129,42 @@ If any field fails validation, `take_screenshot` and report to user.
 3. Skip EOB attachment upload
 4. `take_snapshot` to verify
 5. Click "Next" to advance
+
+### Step 9: Select Submission Type
+
+1. `take_snapshot` to see form state
+2. Use `fill` to select:
+   - **Foreign/cruise ship services**: "No" (from config `defaults.foreignServices`)
+3. Use `fill` to select the **Submission Type** from the dropdown, using the type determined in Step 3
+4. `take_snapshot` to verify the correct type is selected
+5. Click "Next" to advance
+
+### Step 10: Fill Service Line Details
+
+This is the most complex step. The form allows multiple service lines.
+
+**For the first service line:**
+
+1. `take_snapshot` to see the service detail fields
+2. Use `fill_form` to fill:
+   - **ICD-10 Diagnosis Code(s)**: from extracted data. Use "Add Diagnosis Code" if multiple codes.
+   - **CPT/HCPCS Procedure Code**: from extracted data
+   - **Modifier Code(s)**: from extracted data (if any). Use "Add Modifier" if multiple.
+   - **Units/Quantity**: from extracted data
+   - **Service Description**: from extracted data
+   - **Date of Service**: from extracted data (MM/DD/YYYY format)
+   - **Charge Amount**: from extracted data (numeric, no $ sign)
+3. `take_snapshot` to verify all fields filled correctly
+
+**For additional service lines (if multiple lines on the superbill):**
+
+4. Click "Add Service Item" button
+5. Repeat step 2-3 for each additional service line
+6. Continue until all service lines from the superbill are entered
+
+**After all service lines are entered:**
+
+7. `take_snapshot` for a final review of all service lines
+8. Click "Next" to advance
+
+Important: The form supports up to 18-19 service items. If the superbill has more, inform the user they'll need to submit multiple claims.
