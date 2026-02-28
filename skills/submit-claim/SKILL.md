@@ -168,3 +168,49 @@ This is the most complex step. The form allows multiple service lines.
 8. Click "Next" to advance
 
 Important: The form supports up to 18-19 service items. If the superbill has more, inform the user they'll need to submit multiple claims.
+
+### Step 11: Attachments (User Action)
+
+Inform the user:
+
+> "I've filled out all the claim details. Please now:
+> 1. Upload your superbill/receipt as a proof of payment attachment
+> 2. Check any applicable boxes (corrected claim, provider report, etc.)
+> 3. Let me know when the attachment is uploaded so I can continue."
+
+Wait for user confirmation before proceeding.
+
+### Step 12: Review and Submit (User Action)
+
+After the user confirms the attachment is uploaded:
+
+1. Click "Next" to advance to the review/summary page
+2. `take_snapshot` to capture the review summary
+3. Present the summary to the user
+
+Inform the user:
+
+> "The form is ready for your review. Please:
+> 1. Review all the information on the summary page
+> 2. If anything needs correction, use the edit links on the form
+> 3. Sign electronically and accept the terms
+> 4. Click Submit when ready
+>
+> I will NOT click Submit — that's your action to take."
+
+## Error Handling
+
+Throughout the form filling process:
+
+- **Field fill failure**: If `fill` or `fill_form` doesn't work on a field, `take_screenshot` to see the field state, then try alternative approaches (clicking first, using `type_text`, etc.). If still failing, report the specific field to the user for manual entry.
+- **Validation errors**: If the form shows validation errors after clicking "Next", `take_snapshot` to identify which fields have errors, attempt to fix them, and retry.
+- **Navigation issues**: If the form doesn't advance after clicking "Next", `take_snapshot` to check for blocking validation errors or popups.
+- **Unexpected form state**: If the form doesn't match expected structure (UHC may update their form), `take_snapshot` and describe what you see to the user. Attempt to adapt, or ask user for guidance.
+
+## Notes
+
+- The form URL is: `https://memberforms.uhc.com/DirectMedicalReimbursement.html`
+- Processing takes 10-15 business days after submission
+- This skill does not guarantee reimbursement — it only automates form filling
+- Always verify extracted data with the user before filling the form
+- Keep the browser window open throughout the process
