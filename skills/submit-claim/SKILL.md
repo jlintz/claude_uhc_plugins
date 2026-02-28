@@ -116,6 +116,7 @@ If any field fails validation, `take_screenshot` and report to user.
 2. Use `fill_form` to fill:
    - **Relationship to Subscriber**: from config `defaults.patientRelationship` (typically "Subscriber")
    - **Patient First Name**: from config `subscriber.firstName`
+   - **Patient Last Name**: from config `subscriber.lastName`
    - **Patient Date of Birth**: from config `subscriber.dateOfBirth`
 3. If the superbill shows a different patient name than the subscriber, ask the user to clarify who the patient is
 4. `take_snapshot` to verify
