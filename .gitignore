@@ -1,6 +1,5 @@
 # Sensitive config with real member details
-config/member.json
-docs/plans/
+plugins/claude-uhc-plugin/config/member.json
 
 # OS files
 .DS_Store

@@ -1,0 +1,22 @@
+{
+    "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+    "name": "jlintz-uhc-marketplace",
+    "description": "jlintz's custom skills and plugins for interacting with United Healthcare",
+    "owner": {
+        "name": "Justin Lintz",
+        "email": "jlintz@gmail.com"
+    },
+    "plugins": [
+        {
+            "name": "claude-uhc-plugin",
+            "description": "Automates filling out UHC Direct Medical Reimbursement forms using superbill data extraction and Chrome DevTools browser automation",
+            "version": "1.0.0",
+            "author": {
+                "name": "Justin Lintz",
+                "email": "jlintz@gmail.com"
+            },
+            "source": "./plugins/claude-uhc-plugin",
+            "category": "productivity"
+        }
+    ]
+}
