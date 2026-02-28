@@ -84,3 +84,48 @@ Present a summary table to the user and ask for confirmation before proceeding:
 Use AskUserQuestion: "Does this look correct? Should I proceed to fill the form?"
 
 Do NOT proceed to form filling until the user confirms.
+
+### Step 5: Email Verification (User Action)
+
+Inform the user:
+
+> "Please navigate to https://memberforms.uhc.com/DirectMedicalReimbursement.html in your Chrome browser, complete the email verification step, and let me know when you're past it. I'll then fill out the rest of the form."
+
+Wait for the user to confirm they've completed email verification before proceeding.
+
+### Step 6: Fill Subscriber Information
+
+Use Chrome DevTools MCP tools:
+
+1. `take_snapshot` to see current form state
+2. Identify the subscriber information fields
+3. Use `fill_form` to fill:
+   - **Member ID**: from config `subscriber.memberId`
+   - **Date of Birth**: from config `subscriber.dateOfBirth`
+   - **Group Number**: from config `subscriber.groupNumber`
+   - **First Name**: from config `subscriber.firstName`
+   - **Last Name**: from config `subscriber.lastName`
+4. `take_snapshot` to verify fields were filled correctly
+5. Click the "Next" or "Continue" button to advance
+
+If any field fails validation, `take_screenshot` and report to user.
+
+### Step 7: Fill Patient Information
+
+1. `take_snapshot` to see form state
+2. Use `fill_form` to fill:
+   - **Relationship to Subscriber**: from config `defaults.patientRelationship` (typically "Subscriber")
+   - **Patient First Name**: from config `subscriber.firstName`
+   - **Patient Date of Birth**: from config `subscriber.dateOfBirth`
+3. If the superbill shows a different patient name than the subscriber, ask the user to clarify who the patient is
+4. `take_snapshot` to verify
+5. Click "Next" to advance
+
+### Step 8: Fill Payer Information
+
+1. `take_snapshot` to see form state
+2. Use `fill` to select:
+   - **Other medical insurance**: "No" (from config `defaults.otherInsurance`)
+3. Skip EOB attachment upload
+4. `take_snapshot` to verify
+5. Click "Next" to advance
