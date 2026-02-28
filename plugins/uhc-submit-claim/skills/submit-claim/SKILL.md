@@ -1,7 +1,7 @@
 ---
 name: submit-claim
 description: Use this skill when the user asks to "submit a claim", "fill out medical claim form", "submit insurance claim", "process a superbill", or mentions submitting claims to UHC/United Healthcare. This automates filling out UHC's Direct Medical Reimbursement form.
-version: 1.1.0
+version: 1.2.0
 ---
 
 # UHC Direct Medical Reimbursement — Claim Submission
@@ -32,21 +32,27 @@ Use AskUserQuestion to ask the user for the superbill file path:
 
 ### Step 2: Read Config
 
-Read the config file at `config/member.json` (relative to this plugin's root directory).
+Locate `config/member.json` within the plugin's **installed** directory. The installed plugin lives at `~/.claude/plugins/<marketplace>/<plugin>/` — for example `~/.claude/plugins/jlintz-uhc-marketplace/uhc-submit-claim/config/member.json`.
 
-**If the file does not exist:**
+**IMPORTANT:** Do NOT read from the plugin cache directory (`~/.claude/plugins/cache/...`). The cache is read-only and may be stale. Always resolve paths under `~/.claude/plugins/<marketplace>/<plugin>/` (no `cache` segment).
 
-1. Inform the user that no subscriber config was found.
-2. Ask if they would like you to create one now.
-3. If **no** — stop the skill and tell the user to populate `config/member.json` using `config/member.example.json` as a template before retrying.
-4. If **yes** — prompt the user for each required field:
+**If the file is found:** read it and continue to Step 3.
+
+**If the file is not found**, ask the user how they'd like to proceed with three options:
+
+1. **Provide a path** — ask the user for the absolute path to their existing `member.json` file, then read it from that location.
+2. **Create one now** — prompt the user for each required field:
    - Member ID
    - Group Number
    - First Name
    - Last Name
    - Date of Birth (MM/DD/YYYY)
-5. Ask if the patient is the subscriber (default: yes), whether they have other insurance (default: no), and whether services were rendered on a foreign ship/cruise (default: no).
-6. Write the collected values to `config/member.json` in the same format as `config/member.example.json`, then continue.
+   - Patient relationship to subscriber (default: Subscriber)
+   - Other insurance? (default: no)
+   - Foreign/cruise ship services? (default: no)
+
+   Write the collected values to `~/.claude/plugins/<marketplace>/uhc-submit-claim/config/member.json` (the installed directory, NOT the cache), using the same format as `config/member.example.json`, then continue.
+3. **Exit** — stop the skill and tell the user to populate `config/member.json` using `config/member.example.json` as a template before retrying.
 
 ### Step 3: Extract Data from Superbill
 
