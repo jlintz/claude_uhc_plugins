@@ -1,0 +1,5 @@
+# Sensitive config with real member details
+config/member.json
+
+# OS files
+.DS_Store

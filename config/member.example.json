@@ -1,0 +1,14 @@
+{
+  "subscriber": {
+    "memberId": "YOUR_MEMBER_ID",
+    "groupNumber": "YOUR_GROUP_NUMBER",
+    "firstName": "YOUR_FIRST_NAME",
+    "lastName": "YOUR_LAST_NAME",
+    "dateOfBirth": "MM/DD/YYYY"
+  },
+  "defaults": {
+    "patientRelationship": "Subscriber",
+    "otherInsurance": false,
+    "foreignServices": false
+  }
+}
