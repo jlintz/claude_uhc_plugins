@@ -1,5 +1,5 @@
 # Sensitive config with real member details
-plugins/claude-uhc-plugin/config/member.json
+plugins/uhc-submit-claim/config/member.json
 
 # OS files
 .DS_Store
