@@ -48,7 +48,8 @@ Edit `member.json` with your information:
     "groupNumber": "YOUR_GROUP_NUMBER",
     "firstName": "YOUR_FIRST_NAME",
     "lastName": "YOUR_LAST_NAME",
-    "dateOfBirth": "MM/DD/YYYY"
+    "dateOfBirth": "MM/DD/YYYY",
+    "email": "YOUR_EMAIL"
   },
   "defaults": {
     "patientRelationship": "Subscriber",

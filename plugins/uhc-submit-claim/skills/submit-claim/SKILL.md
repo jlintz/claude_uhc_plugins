@@ -47,6 +47,7 @@ Locate `config/member.json` within the plugin's **installed** directory. The ins
    - First Name
    - Last Name
    - Date of Birth (MM/DD/YYYY)
+   - Email address (used for form email verification)
    - Patient relationship to subscriber (default: Subscriber)
    - Other insurance? (default: no)
    - Foreign/cruise ship services? (default: no)
@@ -109,11 +110,13 @@ Do NOT proceed to form filling until the user confirms.
 
 1. Use Chrome DevTools MCP `new_page` to open `https://memberforms.uhc.com/DirectMedicalReimbursement.html`
 2. `take_snapshot` to see the email verification form
-3. Inform the user:
+3. Use `fill` to enter the subscriber's email address from config `subscriber.email` into the email field
+4. `take_snapshot` to verify the email was entered, then click the submit/verify button
+5. Inform the user:
 
-> "I've opened the UHC reimbursement form. Please complete the email verification step in the browser and let me know when you're past it."
+> "I've entered your email address and started the verification process. Please check your inbox for the verification code, enter it in the browser, and let me know when you're past the verification step."
 
-4. Wait for the user to confirm they've completed email verification before proceeding.
+6. Wait for the user to confirm they've completed email verification before proceeding.
 
 ### Step 6: Fill Subscriber Information
 
