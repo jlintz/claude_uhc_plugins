@@ -173,7 +173,7 @@ This is the most complex step. The form allows multiple service lines.
 
 1. `take_snapshot` to see the service detail fields
 2. Use `fill_form` to fill:
-   - **ICD-10 Diagnosis Code(s)**: from extracted data. Use "Add Diagnosis Code" if multiple codes.
+   - **ICD-10 Diagnosis Code(s)**: from extracted data. **Strip all periods before entering** (e.g., "F41.8" → "F418"). Use "Add Diagnosis Code" if multiple codes.
    - **CPT/HCPCS Procedure Code**: from extracted data
    - **Modifier Code(s)**: from extracted data (if any). Use "Add Modifier" if multiple.
    - **Units/Quantity**: from extracted data
