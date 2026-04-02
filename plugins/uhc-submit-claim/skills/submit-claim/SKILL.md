@@ -1,7 +1,7 @@
 ---
 name: submit-claim
 description: Use this skill when the user asks to "submit a claim", "fill out medical claim form", "submit insurance claim", "process a superbill", or mentions submitting claims to UHC/United Healthcare. This automates filling out UHC's Direct Medical Reimbursement form.
-version: 1.3.0
+version: 1.4.0
 ---
 
 # UHC Direct Medical Reimbursement — Claim Submission
@@ -10,9 +10,8 @@ This skill automates filling out UHC's Direct Medical Reimbursement form at `htt
 
 ## Prerequisites
 
-- User must be logged in / have completed email verification on the form already
 - Chrome browser open with Chrome DevTools MCP connected
-- `config/member.json` populated with subscriber details (will prompt to create if missing)
+- `config/member.json` populated with subscriber details including email address (will prompt to create if missing)
 
 ## When to Use
 
@@ -110,13 +109,14 @@ Do NOT proceed to form filling until the user confirms.
 
 1. Use Chrome DevTools MCP `new_page` to open `https://memberforms.uhc.com/DirectMedicalReimbursement.html`
 2. `take_snapshot` to see the email verification form
-3. Use `fill` to enter the subscriber's email address from config `subscriber.email` into the email field
-4. `take_snapshot` to verify the email was entered, then click the submit/verify button
-5. Inform the user:
+3. Use `fill` to enter the subscriber's email address from config `subscriber.email` into the email input field
+4. `take_snapshot` to verify the email was entered correctly
+5. Click the "Send Code" button to trigger the verification code email
+6. Inform the user:
 
-> "I've entered your email address and started the verification process. Please check your inbox for the verification code, enter it in the browser, and let me know when you're past the verification step."
+> "I've entered your email address and clicked Send Code. Please check your inbox for the verification code, enter it in the browser, and let me know when you're past the verification step."
 
-6. Wait for the user to confirm they've completed email verification before proceeding.
+7. Wait for the user to confirm they've completed email verification before proceeding.
 
 ### Step 6: Fill Subscriber Information
 
