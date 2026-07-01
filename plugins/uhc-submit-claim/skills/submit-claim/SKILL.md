@@ -1,7 +1,7 @@
 ---
 name: submit-claim
 description: Use this skill when the user asks to "submit a claim", "fill out medical claim form", "submit insurance claim", "process a superbill", or mentions submitting claims to UHC/United Healthcare. This automates filling out UHC's Direct Medical Reimbursement form.
-version: 1.4.0
+version: 1.5.0
 ---
 
 # UHC Direct Medical Reimbursement — Claim Submission
@@ -108,7 +108,7 @@ Do NOT proceed to form filling until the user confirms.
 ### Step 5: Open Form and Email Verification
 
 1. Use Chrome DevTools MCP `new_page` to open `https://memberforms.uhc.com/DirectMedicalReimbursement.html`
-2. `take_snapshot` to see the email verification form
+2. `take_snapshot`. The form opens on an **intro/landing screen**, not the email step. Click the **"Start new claim form"** button, then `take_snapshot` again to reveal the email verification form.
 3. Use `fill` to enter the subscriber's email address from config `subscriber.email` into the email input field
 4. `take_snapshot` to verify the email was entered correctly
 5. Click the "Send Code" button to trigger the verification code email
@@ -137,15 +137,12 @@ If any field fails validation, `take_screenshot` and report to user.
 
 ### Step 7: Fill Patient Information
 
+This step is a **single radio group** — "Please select who this submission is for" — with options **Subscriber**, **Spouse**, **Dependent**. There are no name/DOB fields when the patient is the subscriber.
+
 1. `take_snapshot` to see form state
-2. Use `fill_form` to fill:
-   - **Relationship to Subscriber**: from config `defaults.patientRelationship` (typically "Subscriber")
-   - **Patient First Name**: from config `subscriber.firstName`
-   - **Patient Last Name**: from config `subscriber.lastName`
-   - **Patient Date of Birth**: from config `subscriber.dateOfBirth`
-3. If the superbill shows a different patient name than the subscriber, ask the user to clarify who the patient is
-4. `take_snapshot` to verify
-5. Click "Next" to advance
+2. Click the radio matching `defaults.patientRelationship` (typically **Subscriber**). If the superbill shows a patient who is not the subscriber, ask the user whether it's the Spouse or a Dependent; selecting **Spouse**/**Dependent** reveals additional name/DOB fields to fill from the superbill.
+3. `take_snapshot` to verify the selection
+4. Click "Next" to advance
 
 ### Step 8: Fill Payer Information
 
@@ -162,40 +159,84 @@ If any field fails validation, `take_screenshot` and report to user.
 2. Use `fill` to select:
    - **Foreign/cruise ship services**: "No" (from config `defaults.foreignServices`)
 3. Use `fill` to select the **Submission Type** from the dropdown, using the type determined in Step 3
-4. `take_snapshot` to verify the correct type is selected
-5. Click "Next" to advance
+4. Selecting a submission type reveals a second dropdown, **"Where were the services rendered?"** (options: Telehealth, Office, Home, Inpatient Hospital Doctor Bill, Outpatient Hospital Doctor Bill). `take_snapshot`, then select the value implied by the superbill:
+   - Place-of-service (POS) code **02** or a description mentioning "telehealth" → **Telehealth**
+   - POS **11** / "office" → **Office**; POS **12** / "home" → **Home**
+   - If ambiguous, ask the user.
+5. `take_snapshot` to verify both dropdowns are set
+6. Click "Next" to advance
 
-### Step 10: Fill Service Line Details
+### Step 10: Fill Provider Information
 
-This is the most complex step. The form allows multiple service lines.
+Selecting a submission type adds a **Provider information** tab (this is where the NPI/TIN extracted in Step 3 are used).
+
+1. `take_snapshot` to see the provider search fields.
+2. Fill the search fields:
+   - **Provider Tax Identification Number (TIN)** — see the TIN note below.
+   - **Individual provider vs. Provider group** — select **Individual Provider** if the superbill names a person (e.g., "Jane Smith, PhD"); select **Provider Group** if it only lists an organization (e.g., "LabCorp").
+   - **Last name / First name** (individual) or organization name (group)
+   - **Zip code** — provider's zip from the superbill
+3. Click **Search**.
+   - **If a matching provider is returned**, select it and continue.
+   - **If not found**, the form shows "please re-enter…". Click **Search** a second time with the same values. After the second failed search, a **manual-entry form** appears.
+4. In the manual-entry form, `fill_form` the full provider details from the superbill: **Last name, First name, NPI (10 digits), Address 1, City, State (dropdown), ZIP code**. Leave Address 2 blank unless present.
+5. `take_snapshot` to verify, then click **Next**.
+
+> **TIN field truncation bug (IMPORTANT):** The Provider TIN input silently truncates/mangles dashed or formatted input. Do **not** type `84-4240960`. Instead set the raw **9 digits** (`844240960`) using the JS native value setter and dispatch events, e.g. via `evaluate_script`:
+> ```js
+> (el) => {
+>   const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+>   setter.call(el, '844240960');
+>   ['input','change','blur'].forEach(t => el.dispatchEvent(new Event(t, { bubbles: true })));
+>   return el.value;
+> }
+> ```
+
+### Step 11: Fill Service Line Details
+
+This is the most complex step (the **Submission details** tab). The form allows multiple service lines.
 
 **For the first service line:**
 
 1. `take_snapshot` to see the service detail fields
 2. Use `fill_form` to fill:
-   - **ICD-10 Diagnosis Code(s)**: from extracted data. Use "Add Diagnosis Code" if multiple codes.
+   - **ICD-10 Diagnosis Code(s)**: from extracted data. Use "+ Add a Diagnosis Code" if multiple codes.
    - **CPT/HCPCS Procedure Code**: from extracted data
-   - **Modifier Code(s)**: from extracted data (if any). Use "Add Modifier" if multiple.
+   - **Modifier Code(s)**: from extracted data (if any). Use "Add modifier" if multiple.
    - **Units/Quantity**: from extracted data
-   - **Service Description**: from extracted data
    - **Date of Service**: from extracted data (MM/DD/YYYY format)
-   - **Charge Amount**: from extracted data (numeric, no $ sign)
+   - **Charge Amount**: from extracted data (numeric, e.g. `250.00`; the form reformats it to `$250.00`)
+   - Note: the first line has no separate "Service Description" field.
 3. `take_snapshot` to verify all fields filled correctly
 
 **For additional service lines (if multiple lines on the superbill):**
 
-4. Click "Add Service Item" button
-5. Repeat step 2-3 for each additional service line
-6. Continue until all service lines from the superbill are entered
+4. Click **"+ Add a Service Item"**. The new line first asks: **"Is the new service item for the same Procedure code, Charge amount and Units?"**
+   - If the new line shares CPT + charge + units with the first (common for recurring therapy — only the date differs), select **Yes**. This pre-fills CPT/units/charge; you then only need to enter the **date of service** and re-enter the **Modifier** (the modifier does **not** carry over).
+   - Otherwise select **No** and fill all fields as in step 2.
+5. Repeat for each additional service line.
+
+**Date-of-service picker bug (IMPORTANT) for added service lines:**
+
+Added lines use an AEM date widget that renders **two** inputs: a visible native `type="date"` picker (the field validation actually reads) and a text fallback. Calling `fill`/`fill_form` on the visible text field does **not** populate the bound native picker, so "Next" will silently fail to advance. Set the native `type="date"` input directly via `evaluate_script` using **ISO `yyyy-mm-dd`** format:
+```js
+(el) => {
+  const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+  setter.call(el, '2026-06-24'); // yyyy-mm-dd
+  ['input','change','blur'].forEach(t => el.dispatchEvent(new Event(t, { bubbles: true })));
+  return el.value;
+}
+```
+Identify the right input by querying `document.querySelectorAll('input[type=date]')` for the empty one belonging to the added line (its `id` contains `guidedatepicker`). After setting, `take_snapshot` and confirm the date-of-service spinbuttons now show the correct month/day/year before advancing.
 
 **After all service lines are entered:**
 
-7. `take_snapshot` for a final review of all service lines
-8. Click "Next" to advance
+6. `take_snapshot` and confirm the read-only **Total charge amount** matches the superbill total.
+7. Click "Next" to advance. If it does not advance, re-check the added-line date pickers per the bug note above.
 
 Important: The form supports up to 18-19 service items. If the superbill has more, inform the user they'll need to submit multiple claims.
 
-### Step 11: Attachments (User Action)
+### Step 12: Attachments (User Action)
 
 Inform the user:
 
@@ -206,7 +247,7 @@ Inform the user:
 
 Wait for user confirmation before proceeding.
 
-### Step 12: Review and Submit (User Action)
+### Step 13: Review and Submit (User Action)
 
 After the user confirms the attachment is uploaded:
 
@@ -229,6 +270,8 @@ Inform the user:
 Throughout the form filling process:
 
 - **Field fill failure**: If `fill` or `fill_form` doesn't work on a field, `take_screenshot` to see the field state, then try alternative approaches (clicking first, using `type_text`, etc.). If still failing, report the specific field to the user for manual entry.
+- **Native inputs that resist `fill` (TIN, added-line date pickers)**: Some fields (the Provider TIN and the date-of-service picker on added service lines) are backed by native inputs whose bound value must be set through the JS native value setter and event dispatch (`evaluate_script`), not `fill`. Use the snippets in Step 10 (TIN, 9 raw digits) and Step 11 (date, ISO `yyyy-mm-dd`). Symptom: the field looks filled but "Next"/"Search" won't proceed, or the value is truncated.
+- **"Next" doesn't advance with no visible error**: Usually a required field whose bound value didn't register — most often an added-line date picker (see Step 11). Re-set it via `evaluate_script` and verify the spinbuttons show the value before retrying.
 - **Validation errors**: If the form shows validation errors after clicking "Next", `take_snapshot` to identify which fields have errors, attempt to fix them, and retry.
 - **Navigation issues**: If the form doesn't advance after clicking "Next", `take_snapshot` to check for blocking validation errors or popups.
 - **Unexpected form state**: If the form doesn't match expected structure (UHC may update their form), `take_snapshot` and describe what you see to the user. Attempt to adapt, or ask user for guidance.

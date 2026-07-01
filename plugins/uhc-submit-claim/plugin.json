@@ -1,7 +1,7 @@
 {
   "name": "uhc-submit-claim",
   "description": "Automates filling out UHC Direct Medical Reimbursement forms using superbill data extraction and Chrome DevTools browser automation",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "author": {
     "name": "Justin Lintz"
   }
