@@ -1,7 +1,7 @@
 ---
 name: submit-claim
 description: Use this skill when the user asks to "submit a claim", "fill out medical claim form", "submit insurance claim", "process a superbill", or mentions submitting claims to UHC/United Healthcare. This automates filling out UHC's Direct Medical Reimbursement form.
-version: 1.5.0
+version: 1.6.0
 ---
 
 # UHC Direct Medical Reimbursement — Claim Submission
@@ -236,34 +236,35 @@ Identify the right input by querying `document.querySelectorAll('input[type=date
 
 Important: The form supports up to 18-19 service items. If the superbill has more, inform the user they'll need to submit multiple claims.
 
-### Step 12: Attachments (User Action)
+### Step 12: Attachments (Automated Upload)
 
-Inform the user:
+The superbill provided in Step 1 is uploaded automatically as the proof-of-payment attachment.
 
-> "I've filled out all the claim details. Please now:
-> 1. Upload your superbill/receipt as a proof of payment attachment
-> 2. Check any applicable boxes (corrected claim, provider report, etc.)
-> 3. Let me know when the attachment is uploaded so I can continue."
+1. `take_snapshot` to locate the **"Upload attachment"** button.
+2. Use the Chrome DevTools MCP `upload_file` tool with:
+   - `uid`: the "Upload attachment" button (it opens the file chooser; `upload_file` handles the chooser without a blocking OS dialog)
+   - `filePath`: the superbill path from Step 1
+3. `take_snapshot` (or `take_screenshot`) and confirm the file shows **"Upload complete."** and the **Attached** count reads **1** (matching the file name from Step 1).
+4. Leave the "check all that apply" boxes (Proof of timely filing, Corrected Claims, Provider reports or records) **unchecked** by default — a standard first submission needs none. Only check one if the user explicitly asked for it.
+5. Click "Next" to advance.
 
-Wait for user confirmation before proceeding.
+If `upload_file` fails (e.g. tool error or the count stays 0), fall back to asking the user to upload the file manually and confirm when done, then continue.
 
-### Step 13: Review and Submit (User Action)
+### Step 13: Review, Sign, and Hand Off (Do NOT Submit)
 
-After the user confirms the attachment is uploaded:
+1. Click "Next" to advance to the review/summary page.
+2. `take_snapshot` to capture the review summary and present it to the user.
+3. **Fill the signature** with the subscriber's full name (`subscriber.firstName` + " " + `subscriber.lastName`). The signature field is guarded, so this requires enabling it first:
+   - The **agreement checkbox** ("I agree to use electronic records and signatures") is `disabled` until the Terms & Conditions disclosure has been scrolled through. Scroll the disclosure container to the bottom (e.g. `evaluate_script` setting the scrollable terms element's `scrollTop = scrollHeight`, or scrolling the page to the checkbox), then `take_snapshot` to confirm the checkbox is now enabled.
+   - Click the agreement checkbox to check it.
+   - Fill the **"Submitter signature"** field with the full name. This field is `readonly`; if `fill` does not take, set it via the JS native value setter + event dispatch (same pattern as the TIN field in Step 10). The **Submission date** is prefilled by the form — leave it.
+   - `take_snapshot` to confirm the signature shows the full name and the checkbox is checked.
+   - If the field still cannot be populated after these attempts, stop and ask the user to type their signature manually (do not keep retrying).
+4. **Do NOT click Submit.** Hand off to the user:
 
-1. Click "Next" to advance to the review/summary page
-2. `take_snapshot` to capture the review summary
-3. Present the summary to the user
-
-Inform the user:
-
-> "The form is ready for your review. Please:
-> 1. Review all the information on the summary page
-> 2. If anything needs correction, use the edit links on the form
-> 3. Sign electronically and accept the terms
-> 4. Click Submit when ready
+> "The form is filled, signed with your name, the superbill is attached, and the terms are accepted. Please review everything on the summary page (use the Edit links for any changes) and click **Submit** when you're ready.
 >
-> I will NOT click Submit — that's your action to take."
+> I will NOT click Submit — that final step is yours."
 
 ## Error Handling
 
