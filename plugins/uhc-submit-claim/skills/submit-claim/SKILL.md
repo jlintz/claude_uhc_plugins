@@ -1,7 +1,7 @@
 ---
 name: submit-claim
 description: Use this skill when the user asks to "submit a claim", "fill out medical claim form", "submit insurance claim", "process a superbill", or mentions submitting claims to UHC/United Healthcare. This automates filling out UHC's Direct Medical Reimbursement form.
-version: 1.6.0
+version: 1.6.1
 ---
 
 # UHC Direct Medical Reimbursement — Claim Submission
@@ -120,18 +120,15 @@ Do NOT proceed to form filling until the user confirms.
 
 ### Step 6: Fill Subscriber Information
 
-Use Chrome DevTools MCP tools:
+This tab has exactly **three** fields — there are no first/last name inputs here (the name is only used later, for the signature in Step 13).
 
 1. `take_snapshot` to see current form state
-2. Identify the subscriber information fields
-3. Use `fill_form` to fill:
+2. Use `fill_form` to fill:
    - **Member ID**: from config `subscriber.memberId`
-   - **Date of Birth**: from config `subscriber.dateOfBirth`
-   - **Group Number**: from config `subscriber.groupNumber`
-   - **First Name**: from config `subscriber.firstName`
-   - **Last Name**: from config `subscriber.lastName`
-4. `take_snapshot` to verify fields were filled correctly
-5. Click the "Next" or "Continue" button to advance
+   - **Subscriber's date of birth**: from config `subscriber.dateOfBirth` (mm/dd/yyyy)
+   - **Group number**: from config `subscriber.groupNumber`
+3. `take_snapshot` to verify fields were filled correctly
+4. Click "Next" to advance. This tab runs an async eligibility lookup, so it may stay on the Subscriber tab for a moment — `take_snapshot` again before assuming it failed.
 
 If any field fails validation, `take_screenshot` and report to user.
 
@@ -218,16 +215,44 @@ This is the most complex step (the **Submission details** tab). The form allows 
 
 **Date-of-service picker bug (IMPORTANT) for added service lines:**
 
-Added lines use an AEM date widget that renders **two** inputs: a visible native `type="date"` picker (the field validation actually reads) and a text fallback. Calling `fill`/`fill_form` on the visible text field does **not** populate the bound native picker, so "Next" will silently fail to advance. Set the native `type="date"` input directly via `evaluate_script` using **ISO `yyyy-mm-dd`** format:
+Each added line renders **three** date inputs, and only one of them gates validation. Setting the wrong one makes the visible date picker *display* the date correctly while the form still treats the field as empty — "Next" then silently fails with no error message and no `aria-invalid` anywhere on the page.
+
+For an added line with generated id prefix `GUID<n>__`:
+
+| Input | id suffix | Type | Role |
+|---|---|---|---|
+| decorative picker | `...guidedatepicker_copy___widget` | `date` | drives the visible spinbuttons — **not** what validates |
+| **bound field** | `...guidedatepicker___widget` | `text` | **this is what validation reads** |
+
+(The first service line's own `...guidedatepicker___widget` has no `GUID` prefix and accepts a normal `fill` with mm/dd/yyyy — only added lines need the workaround.)
+
+Set the GUID-prefixed **text** input via `evaluate_script` in **mm/dd/yyyy** format:
 ```js
-(el) => {
+() => {
+  const el = document.getElementById('GUID..._..._guidedatepicker___widget'); // type=text, NOT _copy_
   const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-  setter.call(el, '2026-06-24'); // yyyy-mm-dd
+  el.focus();
+  setter.call(el, '07/29/2026'); // mm/dd/yyyy
   ['input','change','blur'].forEach(t => el.dispatchEvent(new Event(t, { bubbles: true })));
-  return el.value;
+  return { value: el.value, wrapCls: el.closest('.guideFieldNode').className };
 }
 ```
-Identify the right input by querying `document.querySelectorAll('input[type=date]')` for the empty one belonging to the added line (its `id` contains `guidedatepicker`). After setting, `take_snapshot` and confirm the date-of-service spinbuttons now show the correct month/day/year before advancing.
+
+Locate the right input by listing visible text inputs whose `aria-label` matches `/date of service/i` and picking the empty one:
+```js
+() => {
+  const out = [];
+  document.querySelectorAll('input').forEach(i => {
+    const al = i.getAttribute('aria-label') || '';
+    if (/date of service/i.test(al) && i.offsetParent && i.type === 'text' && !i.value) {
+      out.push({ id: i.id, wrapCls: i.closest('.guideFieldNode').className });
+    }
+  });
+  return out;
+}
+```
+
+**Verify by wrapper class, not by the spinbuttons.** `el.closest('.guideFieldNode').className` must flip to `validation-success af-field-filled`; an unset bound field stays `af-field-empty` (and shows `validation-failure` once touched). The spinbuttons read the decorative picker and will show a date even when the bound field is empty — do not trust them or a `take_snapshot` of them as confirmation.
 
 **After all service lines are entered:**
 
@@ -271,8 +296,8 @@ If `upload_file` fails (e.g. tool error or the count stays 0), fall back to aski
 Throughout the form filling process:
 
 - **Field fill failure**: If `fill` or `fill_form` doesn't work on a field, `take_screenshot` to see the field state, then try alternative approaches (clicking first, using `type_text`, etc.). If still failing, report the specific field to the user for manual entry.
-- **Native inputs that resist `fill` (TIN, added-line date pickers)**: Some fields (the Provider TIN and the date-of-service picker on added service lines) are backed by native inputs whose bound value must be set through the JS native value setter and event dispatch (`evaluate_script`), not `fill`. Use the snippets in Step 10 (TIN, 9 raw digits) and Step 11 (date, ISO `yyyy-mm-dd`). Symptom: the field looks filled but "Next"/"Search" won't proceed, or the value is truncated.
-- **"Next" doesn't advance with no visible error**: Usually a required field whose bound value didn't register — most often an added-line date picker (see Step 11). Re-set it via `evaluate_script` and verify the spinbuttons show the value before retrying.
+- **Native inputs that resist `fill` (TIN, added-line date pickers)**: Some fields (the Provider TIN and the date-of-service field on added service lines) are backed by inputs whose bound value must be set through the JS native value setter and event dispatch (`evaluate_script`), not `fill`. Use the snippets in Step 10 (TIN, 9 raw digits) and Step 11 (date, GUID-prefixed **text** input, mm/dd/yyyy). Symptom: the field looks filled but "Next"/"Search" won't proceed, or the value is truncated.
+- **"Next" doesn't advance with no visible error**: Usually a required field whose bound value didn't register — most often an added-line date of service (see Step 11). Note that `aria-invalid` and on-page error text are often **absent** in this state, so don't conclude the form is valid from their absence. Diagnose by wrapper class instead: find `.guideFieldNode` elements whose className contains `af-field-empty` or `validation-failure`, fix those fields, and confirm each flips to `validation-success af-field-filled` before retrying.
 - **Validation errors**: If the form shows validation errors after clicking "Next", `take_snapshot` to identify which fields have errors, attempt to fix them, and retry.
 - **Navigation issues**: If the form doesn't advance after clicking "Next", `take_snapshot` to check for blocking validation errors or popups.
 - **Unexpected form state**: If the form doesn't match expected structure (UHC may update their form), `take_snapshot` and describe what you see to the user. Attempt to adapt, or ask user for guidance.
